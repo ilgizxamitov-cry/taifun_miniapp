@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import type { MobileControls } from '../ui/MobileControls'
 
 const SPEED = 260
 const JUMP_VELOCITY = -470
@@ -29,6 +30,7 @@ const ATTACK_SCALE = 1.08
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private spaceKey!: Phaser.Input.Keyboard.Key
+  private mobile: MobileControls | null = null
 
   private facingSign = 1
   private locomotionVisual: LocomotionVisualKey | null = null
@@ -59,6 +61,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     )
   }
 
+  bindMobileControls(mobile: MobileControls): void {
+    this.mobile = mobile
+  }
+
   update(): void {
     const dt = this.scene.game.loop.delta
     const body = this.body as Phaser.Physics.Arcade.Body
@@ -69,15 +75,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const attackActive = this.attackMsRemaining > 0
     const moveSpeed = attackActive ? SPEED * ATTACK_MOVE_MULT : SPEED
 
-    if (this.cursors.left.isDown) {
+    const left =
+      this.cursors.left.isDown || (this.mobile !== null && this.mobile.left)
+    const right =
+      this.cursors.right.isDown || (this.mobile !== null && this.mobile.right)
+
+    if (left && !right) {
       body.setVelocityX(-moveSpeed)
-    } else if (this.cursors.right.isDown) {
+    } else if (right && !left) {
       body.setVelocityX(moveSpeed)
     } else {
       body.setVelocityX(0)
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.up) && body.onFloor()) {
+    const touchJump =
+      this.mobile !== null ? this.mobile.consumeJumpEdge() : false
+    const jumpPressed =
+      Phaser.Input.Keyboard.JustDown(this.cursors.up) || touchJump
+
+    if (jumpPressed && body.onFloor()) {
       body.setVelocityY(JUMP_VELOCITY)
     }
 
@@ -110,7 +126,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private tryBeginAttack(): void {
-    if (!Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+    const keyAttack = Phaser.Input.Keyboard.JustDown(this.spaceKey)
+    const touchAttack =
+      this.mobile !== null && this.mobile.consumeAttackEdge()
+    if (!keyAttack && !touchAttack) {
       return
     }
     if (!this.canBeginAttack()) {

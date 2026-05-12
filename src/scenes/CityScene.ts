@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { Enemy } from '../entities/Enemy'
 import { Player } from '../entities/Player'
+import { buildCityParallax } from './cityParallax'
+import { MobileControls } from '../ui/MobileControls'
 
 const WORLD_WIDTH = 4800
 const WORLD_HEIGHT = 1400
@@ -38,6 +40,8 @@ export class CityScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
 
+    buildCityParallax(this, WORLD_WIDTH, WORLD_HEIGHT)
+
     this.ensureCombatFxTextures()
     this.buildPlaceholderTextures()
     this.buildGround()
@@ -45,6 +49,7 @@ export class CityScene extends Phaser.Scene {
     this.player = new Player(this, 320, 860, 'player_placeholder')
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.player.bindCursorKeys(this.cursors)
+    this.player.bindMobileControls(new MobileControls(this))
 
     this.physics.add.collider(this.player, this.platforms)
 
