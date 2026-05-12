@@ -124,6 +124,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.locomotionVisual = null
   }
 
+  /** Used by scenes for placeholder strike checks until hitboxes land. */
+  isAttackActive(): boolean {
+    return this.attackMsRemaining > 0
+  }
+
   /** Hook point for future `play()` / texture swaps — swap implementation only. */
   private applyLocomotionPresentation(state: LocomotionVisualKey): void {
     if (state === this.locomotionVisual) {
