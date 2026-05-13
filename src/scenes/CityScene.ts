@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { Enemy } from '../entities/Enemy'
 import { Player } from '../entities/Player'
 import { buildCityParallax } from './cityParallax'
-import { MobileControls } from '../ui/MobileControls'
+
 
 const WORLD_WIDTH = 4800
 const WORLD_HEIGHT = 1400
