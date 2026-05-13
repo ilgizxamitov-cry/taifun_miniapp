@@ -49,7 +49,6 @@ export class CityScene extends Phaser.Scene {
     this.player = new Player(this, 320, 860, 'player_placeholder')
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.player.bindCursorKeys(this.cursors)
-    this.player.bindMobileControls(new MobileControls(this))
 
     this.physics.add.collider(this.player, this.platforms)
 
@@ -85,9 +84,9 @@ export class CityScene extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup()
 
     const ground = this.add.rectangle(
-      WORLD_WIDTH / 2,
-      WORLD_HEIGHT - 40,
-      WORLD_WIDTH,
+      270,
+      720,
+      540,
       80,
       0x3a4258,
     )
