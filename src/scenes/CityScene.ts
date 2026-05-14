@@ -1,11 +1,13 @@
 import Phaser from 'phaser'
 import { Enemy } from '../entities/Enemy'
 import { Player } from '../entities/Player'
+import { MobileControls } from '../ui/MobileControls'
 import { buildCityParallax } from './cityParallax'
 
-
-const WORLD_WIDTH = 4800
-const WORLD_HEIGHT = 1400
+const WORLD_WIDTH = 640
+const WORLD_HEIGHT = 960
+const ARENA_CENTER_X = WORLD_WIDTH / 2
+const ARENA_CENTER_Y = WORLD_HEIGHT / 2
 const SKY_COLOR = 0x1a1f2e
 
 /** Strike defeat radius — placeholder until hitboxes exist. */
@@ -24,7 +26,7 @@ const SPARK_TEX_KEY = 'hit_spark_dot'
 export class CityScene extends Phaser.Scene {
   private player!: Player
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
-  private platforms!: Phaser.Physics.Arcade.StaticGroup
+  private mobileControls!: MobileControls
 
   private enemies: Enemy[] = []
   private defeatedCount = 0
@@ -44,19 +46,19 @@ export class CityScene extends Phaser.Scene {
 
     this.ensureCombatFxTextures()
     this.buildPlaceholderTextures()
-    this.buildGround()
+    this.buildArena()
 
-    this.player = new Player(this, 320, 860, 'player_placeholder')
+    this.player = new Player(this, ARENA_CENTER_X, ARENA_CENTER_Y, 'player_placeholder')
     this.cursors = this.input.keyboard!.createCursorKeys()
+    this.mobileControls = new MobileControls(this)
     this.player.bindCursorKeys(this.cursors)
-
-    this.physics.add.collider(this.player, this.platforms)
+    this.player.bindMobileControls(this.mobileControls)
 
     this.spawnEnemies()
     this.buildHud()
 
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
-    this.cameras.main.setDeadzone(80, 48)
+    this.cameras.main.startFollow(this.player, true, 0.06, 0.06)
+    this.cameras.main.setDeadzone(64, 96)
   }
 
   private ensureCombatFxTextures(): void {
@@ -80,43 +82,59 @@ export class CityScene extends Phaser.Scene {
     g.destroy()
   }
 
-  private buildGround(): void {
-    this.platforms = this.physics.add.staticGroup()
-
-    const ground = this.add.rectangle(
-      270,
-      720,
-      540,
-      80,
-      0x3a4258,
+  private buildArena(): void {
+    const floor = this.add.rectangle(
+      ARENA_CENTER_X,
+      ARENA_CENTER_Y,
+      WORLD_WIDTH - 48,
+      WORLD_HEIGHT - 96,
+      0x232b3d,
     )
-    ground.setStrokeStyle(2, 0x2a3144)
-    this.physics.add.existing(ground, true)
+    floor.setDepth(-20)
+    floor.setStrokeStyle(3, 0x60708f, 0.52)
 
-    this.platforms.add(ground)
+    const inner = this.add.rectangle(
+      ARENA_CENTER_X,
+      ARENA_CENTER_Y,
+      WORLD_WIDTH - 128,
+      WORLD_HEIGHT - 220,
+      0x2a3348,
+    )
+    inner.setDepth(-19)
+    inner.setAlpha(0.42)
+    inner.setStrokeStyle(2, 0x9fb5da, 0.18)
 
-    const ledge = this.add.rectangle(1400, 920, 280, 24, 0x4b5568)
-    ledge.setStrokeStyle(2, 0x343c4f)
-    this.physics.add.existing(ledge, true)
-    this.platforms.add(ledge)
+    const ring = this.add.ellipse(
+      ARENA_CENTER_X,
+      ARENA_CENTER_Y,
+      330,
+      430,
+      0x101824,
+      0.16,
+    )
+    ring.setDepth(-18)
+    ring.setStrokeStyle(2, 0xffd166, 0.26)
 
-    const ledge2 = this.add.rectangle(2600, 780, 220, 24, 0x4b5568)
-    ledge2.setStrokeStyle(2, 0x343c4f)
-    this.physics.add.existing(ledge2, true)
-    this.platforms.add(ledge2)
+    const vignetteTop = this.add.rectangle(ARENA_CENTER_X, 46, WORLD_WIDTH, 92, 0x070a11)
+    vignetteTop.setDepth(-10)
+    vignetteTop.setAlpha(0.24)
+
+    const vignetteBottom = this.add.rectangle(ARENA_CENTER_X, WORLD_HEIGHT - 46, WORLD_WIDTH, 92, 0x070a11)
+    vignetteBottom.setDepth(-10)
+    vignetteBottom.setAlpha(0.3)
   }
 
   private spawnEnemies(): void {
-    const placements: [number, number, number, number][] = [
-      [950, 1295, 620, 1180],
-      [2150, 1295, 1780, 2480],
-      [3550, 1295, 3050, 3920],
+    const placements: [number, number][] = [
+      [ARENA_CENTER_X - 120, ARENA_CENTER_Y - 120],
+      [ARENA_CENTER_X + 135, ARENA_CENTER_Y - 82],
+      [ARENA_CENTER_X - 92, ARENA_CENTER_Y + 138],
+      [ARENA_CENTER_X + 118, ARENA_CENTER_Y + 116],
     ]
 
-    for (const [x, y, minX, maxX] of placements) {
-      const enemy = new Enemy(this, x, y, minX, maxX)
+    for (const [x, y] of placements) {
+      const enemy = new Enemy(this, x, y)
       this.enemies.push(enemy)
-      this.physics.add.collider(enemy, this.platforms)
     }
   }
 
@@ -218,7 +236,7 @@ export class CityScene extends Phaser.Scene {
 
     for (const enemy of this.enemies) {
       if (enemy.active) {
-        enemy.updatePatrol()
+        enemy.updateChase(this.player)
       }
     }
 

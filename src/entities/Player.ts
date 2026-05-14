@@ -1,8 +1,8 @@
 import Phaser from 'phaser'
 import type { MobileControls } from '../ui/MobileControls'
 
-const SPEED = 260
-const JUMP_VELOCITY = -470
+const SPEED = 250
+const DIAGONAL_NORMAL = 0.70710678
 
 const TEX_W = 32
 const TEX_H = 48
@@ -17,8 +17,8 @@ type LocomotionVisualKey = (typeof LocomotionVisual)[keyof typeof LocomotionVisu
 
 const IDLE_TINT = 0xc4ccd8
 const MOVE_TINT = 0xffffff
-const FACING_EPS = 12
-const MOVING_VX = 10
+const FACING_EPS = 0.12
+const MOVING_SPEED = 8
 
 /** Combat tuning — swap durations / replace visuals when attacks expand. */
 const ATTACK_DURATION_MS = 140
@@ -30,6 +30,7 @@ const ATTACK_SCALE = 1.08
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private spaceKey!: Phaser.Input.Keyboard.Key
+  private wasdKeys!: Record<'w' | 'a' | 's' | 'd', Phaser.Input.Keyboard.Key>
   private mobile: MobileControls | null = null
 
   private facingSign = 1
@@ -47,7 +48,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true)
 
     const body = this.body as Phaser.Physics.Arcade.Body
-    body.setMaxVelocity(SPEED + 40, 980)
+    body.setAllowGravity(false)
+    body.setDamping(true)
+    body.setDrag(900, 900)
+    body.setMaxVelocity(SPEED + 40, SPEED + 40)
     body.setSize(26, 42)
     body.setOffset(3, 6)
 
@@ -59,6 +63,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.spaceKey = this.scene.input.keyboard!.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE,
     )
+    this.wasdKeys = {
+      w: this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      a: this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      s: this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      d: this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    }
   }
 
   bindMobileControls(mobile: MobileControls): void {
@@ -75,27 +85,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const attackActive = this.attackMsRemaining > 0
     const moveSpeed = attackActive ? SPEED * ATTACK_MOVE_MULT : SPEED
 
-    const left =
-      this.cursors.left.isDown || (this.mobile !== null && this.mobile.left)
-    const right =
-      this.cursors.right.isDown || (this.mobile !== null && this.mobile.right)
+    const keyboardX =
+      (this.cursors.left.isDown || this.wasdKeys.a.isDown ? -1 : 0) +
+      (this.cursors.right.isDown || this.wasdKeys.d.isDown ? 1 : 0)
+    const keyboardY =
+      (this.cursors.up.isDown || this.wasdKeys.w.isDown ? -1 : 0) +
+      (this.cursors.down.isDown || this.wasdKeys.s.isDown ? 1 : 0)
 
-    if (left && !right) {
-      body.setVelocityX(-moveSpeed)
-    } else if (right && !left) {
-      body.setVelocityX(moveSpeed)
-    } else {
-      body.setVelocityX(0)
+    let moveX = keyboardX
+    let moveY = keyboardY
+
+    if (this.mobile !== null && (this.mobile.moveX !== 0 || this.mobile.moveY !== 0)) {
+      moveX = this.mobile.moveX
+      moveY = this.mobile.moveY
     }
 
-    const touchJump =
-      this.mobile !== null ? this.mobile.consumeJumpEdge() : false
-    const jumpPressed =
-      Phaser.Input.Keyboard.JustDown(this.cursors.up) || touchJump
-
-    if (jumpPressed && body.onFloor()) {
-      body.setVelocityY(JUMP_VELOCITY)
+    if (moveX !== 0 && moveY !== 0 && Math.abs(moveX) === 1 && Math.abs(moveY) === 1) {
+      moveX *= DIAGONAL_NORMAL
+      moveY *= DIAGONAL_NORMAL
     }
+
+    body.setVelocity(moveX * moveSpeed, moveY * moveSpeed)
 
     this.syncPresentation(body)
   }
@@ -173,6 +183,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private syncPresentation(body: Phaser.Physics.Arcade.Body): void {
     const vx = body.velocity.x
+    const vy = body.velocity.y
 
     if (vx > FACING_EPS) {
       this.facingSign = 1
@@ -189,7 +200,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setScale(1, 1)
 
-    const moving = Math.abs(vx) > MOVING_VX || !body.onFloor()
+    const moving = Math.hypot(vx, vy) > MOVING_SPEED
     this.applyLocomotionPresentation(
       moving ? LocomotionVisual.Move : LocomotionVisual.Idle,
     )
