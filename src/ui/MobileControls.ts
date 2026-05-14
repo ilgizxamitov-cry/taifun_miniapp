@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
 
 const DEPTH = 1500
-const STICK_BASE_SIZE = 112
-const STICK_KNOB_SIZE = 44
-const ACTION_SIZE = 96
+const STICK_BASE_SIZE = 116
+const STICK_KNOB_SIZE = 48
+const ACTION_SIZE = 112
 const EDGE_PAD = 20
 const CONTROL_BOTTOM_PAD = 34
 const DEADZONE = 8
@@ -39,36 +39,36 @@ export class MobileControls {
     this.root.setScrollFactor(0)
     this.root.setDepth(DEPTH)
 
-    this.stickBase = scene.add.ellipse(0, 0, STICK_BASE_SIZE, STICK_BASE_SIZE, 0x101824)
-    this.stickBase.setAlpha(0.42)
-    this.stickBase.setStrokeStyle(2, 0x8aa4cc, 0.48)
+    this.stickBase = scene.add.ellipse(0, 0, STICK_BASE_SIZE, STICK_BASE_SIZE, 0xffffff)
+    this.stickBase.setAlpha(0.34)
+    this.stickBase.setStrokeStyle(3, 0x2f7fb8, 0.62)
     this.stickBase.setScrollFactor(0)
     this.stickBase.setInteractive({ useHandCursor: false })
 
-    this.stickKnob = scene.add.ellipse(0, 0, STICK_KNOB_SIZE, STICK_KNOB_SIZE, 0xdce8ff)
-    this.stickKnob.setAlpha(0.62)
-    this.stickKnob.setStrokeStyle(2, 0xffffff, 0.3)
+    this.stickKnob = scene.add.ellipse(0, 0, STICK_KNOB_SIZE, STICK_KNOB_SIZE, 0xffdf62)
+    this.stickKnob.setAlpha(0.82)
+    this.stickKnob.setStrokeStyle(3, 0xffffff, 0.7)
     this.stickKnob.setScrollFactor(0)
 
     this.stickLabel = scene.add.text(0, 0, 'MOVE', {
       fontFamily: 'monospace',
       fontSize: '12px',
-      color: '#dce8ff',
+      color: '#17324d',
     })
     this.stickLabel.setOrigin(0.5)
-    this.stickLabel.setAlpha(0.72)
+    this.stickLabel.setAlpha(0.82)
     this.stickLabel.setScrollFactor(0)
 
-    this.actionButton = scene.add.ellipse(0, 0, ACTION_SIZE, ACTION_SIZE, 0x5c2030)
-    this.actionButton.setAlpha(0.72)
-    this.actionButton.setStrokeStyle(3, 0xffd166, 0.72)
+    this.actionButton = scene.add.ellipse(0, 0, ACTION_SIZE, ACTION_SIZE, 0xf05a28)
+    this.actionButton.setAlpha(0.88)
+    this.actionButton.setStrokeStyle(5, 0xfff3a6, 0.92)
     this.actionButton.setScrollFactor(0)
     this.actionButton.setInteractive({ useHandCursor: false })
 
     this.actionText = scene.add.text(0, 0, 'ACTION', {
       fontFamily: 'monospace',
-      fontSize: '15px',
-      color: '#fff2bb',
+      fontSize: '16px',
+      color: '#ffffff',
     })
     this.actionText.setOrigin(0.5)
     this.actionText.setAlpha(0.95)
@@ -145,9 +145,9 @@ export class MobileControls {
       this.attackPending = true
       this.scene.tweens.add({
         targets: this.actionButton,
-        scaleX: 0.92,
-        scaleY: 0.92,
-        duration: 45,
+        scaleX: 0.86,
+        scaleY: 0.86,
+        duration: 55,
         yoyo: true,
       })
     })
