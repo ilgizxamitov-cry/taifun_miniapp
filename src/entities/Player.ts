@@ -4,8 +4,9 @@ import type { MobileControls } from '../ui/MobileControls'
 const SPEED = 250
 const DIAGONAL_NORMAL = 0.70710678
 
-const TEX_W = 32
-const TEX_H = 48
+const HERO_SCALE = 0.75
+const HERO_BODY_W = 35
+const HERO_BODY_H = 56
 
 /** Locomotion-only visuals; future anim layers can map to these keys. */
 const LocomotionVisual = {
@@ -15,7 +16,7 @@ const LocomotionVisual = {
 
 type LocomotionVisualKey = (typeof LocomotionVisual)[keyof typeof LocomotionVisual]
 
-const IDLE_TINT = 0xc4ccd8
+const IDLE_TINT = 0xffffff
 const MOVE_TINT = 0xffffff
 const FACING_EPS = 0.12
 const MOVING_SPEED = 8
@@ -40,7 +41,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private cooldownMsRemaining = 0
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
-    Player.replaceSilhouetteTexture(scene, textureKey)
     super(scene, x, y, textureKey)
     scene.add.existing(this)
     scene.physics.add.existing(this)
@@ -52,8 +52,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setDamping(true)
     body.setDrag(900, 900)
     body.setMaxVelocity(SPEED + 40, SPEED + 40)
-    body.setSize(26, 42)
-    body.setOffset(3, 6)
+    this.setScale(HERO_SCALE)
+    body.setSize(HERO_BODY_W, HERO_BODY_H, true)
 
     this.applyLocomotionPresentation(LocomotionVisual.Idle)
   }
@@ -178,7 +178,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** Distinct strike read — replace with anim-driven offsets later. */
   private applyAttackPresentation(): void {
     this.setTint(ATTACK_TINT)
-    this.setScale(ATTACK_SCALE)
+    this.setScale(HERO_SCALE * ATTACK_SCALE)
   }
 
   private syncPresentation(body: Phaser.Physics.Arcade.Body): void {
@@ -198,7 +198,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return
     }
 
-    this.setScale(1, 1)
+    this.setScale(HERO_SCALE)
 
     const moving = Math.hypot(vx, vy) > MOVING_SPEED
     this.applyLocomotionPresentation(
@@ -206,37 +206,4 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     )
   }
 
-  /** Generated art faces right; flipX handles left. Replaces any prior key of same name. */
-  private static replaceSilhouetteTexture(scene: Phaser.Scene, key: string): void {
-    if (scene.textures.exists(key)) {
-      scene.textures.remove(key)
-    }
-
-    const g = scene.make.graphics({ x: 0, y: 0 })
-
-    g.fillStyle(0x2c141c)
-    g.fillRect(9, 14, 18, 30)
-
-    g.fillStyle(0xff4b61)
-    g.fillRoundedRect(8, 16, 18, 26, 3)
-
-    g.fillStyle(0xffe6dc)
-    g.fillEllipse(17, 11, 13, 11)
-
-    g.fillStyle(0x1a0f18)
-    g.fillEllipse(20, 10, 3, 3)
-
-    g.fillStyle(0xffc9b8)
-    g.fillRect(17, 19, 6, 11)
-
-    g.fillStyle(0xff4b61)
-    g.fillRect(11, 38, 6, 8)
-    g.fillRect(18, 38, 6, 8)
-
-    g.lineStyle(2, 0x2b121a, 1)
-    g.strokeRoundedRect(7, 15, 20, 28, 4)
-
-    g.generateTexture(key, TEX_W, TEX_H)
-    g.destroy()
-  }
 }

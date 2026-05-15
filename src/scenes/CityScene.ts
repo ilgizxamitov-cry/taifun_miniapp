@@ -4,6 +4,12 @@ import { Player } from '../entities/Player'
 import { MobileControls } from '../ui/MobileControls'
 import { buildCityParallax } from './cityParallax'
 
+const HERO_TEXTURE_KEY = 'hero'
+const HERO_TEXTURE_URL = new URL(
+  '../../assets/characters/hero/concept/hero.png',
+  import.meta.url,
+).href
+
 const WORLD_WIDTH = 640
 const WORLD_HEIGHT = 960
 const ARENA_CENTER_X = WORLD_WIDTH / 2
@@ -36,6 +42,10 @@ export class CityScene extends Phaser.Scene {
     super({ key: 'CityScene' })
   }
 
+  preload(): void {
+    this.load.image(HERO_TEXTURE_KEY, HERO_TEXTURE_URL)
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor(SKY_COLOR)
 
@@ -49,7 +59,7 @@ export class CityScene extends Phaser.Scene {
     this.buildPlaceholderTextures()
     this.buildArena()
 
-    this.player = new Player(this, ARENA_CENTER_X, ARENA_CENTER_Y, 'player_placeholder')
+    this.player = new Player(this, ARENA_CENTER_X, ARENA_CENTER_Y, HERO_TEXTURE_KEY)
     this.player.setDepth(35)
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.mobileControls = new MobileControls(this)
@@ -75,14 +85,6 @@ export class CityScene extends Phaser.Scene {
   }
 
   private buildPlaceholderTextures(): void {
-    const g = this.make.graphics({ x: 0, y: 0 })
-    g.fillStyle(0xff5c6c)
-    g.fillRect(0, 0, 32, 48)
-    g.fillStyle(0xffe08a)
-    g.fillRect(10, 12, 12, 10)
-    g.generateTexture('player_placeholder', 32, 48)
-    g.destroy()
-
     this.buildOfficeWorkerEnemyTexture()
   }
 
