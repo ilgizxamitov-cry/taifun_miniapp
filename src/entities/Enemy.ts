@@ -1,56 +1,66 @@
 import Phaser from 'phaser'
+import type { Player } from './Player'
 
 const TEX_KEY = 'enemy_placeholder'
 const TEX_W = 28
 const TEX_H = 36
 
-const PATROL_SPEED = 88
+const CHASE_SPEED = 118
+const PRESSURE_SPEED = 150
+const STOP_RADIUS = 34
+const ACCELERATION = 8
 
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
-  private readonly patrolMinX: number
-  private readonly patrolMaxX: number
-  private direction = 1
   private defeatPending = false
 
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    patrolMinX: number,
-    patrolMaxX: number,
-  ) {
+  constructor(scene: Phaser.Scene, x: number, y: number) {
     Enemy.ensureTexture(scene)
     super(scene, x, y, TEX_KEY)
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    this.patrolMinX = patrolMinX
-    this.patrolMaxX = patrolMaxX
-
     const body = this.body as Phaser.Physics.Arcade.Body
     body.setCollideWorldBounds(true)
+    body.setAllowGravity(false)
+    body.setDamping(true)
+    body.setDrag(650, 650)
+    body.setMaxVelocity(PRESSURE_SPEED, PRESSURE_SPEED)
     body.setSize(22, 28)
     body.setOffset(3, 4)
 
-    this.applyFacingFlip()
+    this.applyFacingFlip(1)
   }
 
-  updatePatrol(): void {
+  updateChase(player: Player): void {
     if (this.defeatPending) {
       return
     }
 
     const body = this.body as Phaser.Physics.Arcade.Body
-    body.setVelocityX(PATROL_SPEED * this.direction)
+    const dx = player.x - this.x
+    const dy = player.y - this.y
+    const dist = Math.hypot(dx, dy)
 
-    if (this.x >= this.patrolMaxX) {
-      this.setX(this.patrolMaxX)
-      this.direction = -1
-      this.applyFacingFlip()
-    } else if (this.x <= this.patrolMinX) {
-      this.setX(this.patrolMinX)
-      this.direction = 1
-      this.applyFacingFlip()
+    if (dist <= STOP_RADIUS) {
+      body.setVelocity(body.velocity.x * 0.72, body.velocity.y * 0.72)
+      return
+    }
+
+    const pressure = dist > 210 ? PRESSURE_SPEED : CHASE_SPEED
+    const tx = (dx / dist) * pressure
+    const ty = (dy / dist) * pressure
+
+    body.setVelocity(
+      Phaser.Math.Linear(body.velocity.x, tx, ACCELERATION / 60),
+      Phaser.Math.Linear(body.velocity.y, ty, ACCELERATION / 60),
+    )
+    this.applyFacingFlip(dx)
+  }
+
+  /** Backwards-compatible scene hook name, now arena-chases instead of patrolling. */
+  updatePatrol(player?: Player): void {
+    if (player) {
+      this.updateChase(player)
     }
   }
 
@@ -92,8 +102,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     })
   }
 
-  private applyFacingFlip(): void {
-    this.setFlipX(this.direction < 0)
+  private applyFacingFlip(directionX: number): void {
+    if (Math.abs(directionX) < 0.01) {
+      return
+    }
+    this.setFlipX(directionX < 0)
   }
 
   private static ensureTexture(scene: Phaser.Scene): void {

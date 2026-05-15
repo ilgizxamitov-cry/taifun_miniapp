@@ -19,8 +19,8 @@ if (tg) {
     console.log('Running in browser mode')
 }
 
-const DESIGN_WIDTH = 960
-const DESIGN_HEIGHT = 540
+const DESIGN_WIDTH = 540
+const DESIGN_HEIGHT = 960
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,

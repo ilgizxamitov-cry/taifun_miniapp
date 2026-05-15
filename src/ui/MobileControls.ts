@@ -1,30 +1,33 @@
 import Phaser from 'phaser'
 
 const DEPTH = 1500
-const BTN_SIZE = 74
-const BTN_GAP = 11
-const EDGE_PAD = 16
-const ROW_GAP = 12
+const STICK_BASE_SIZE = 116
+const STICK_KNOB_SIZE = 48
+const ACTION_SIZE = 112
+const EDGE_PAD = 20
+const CONTROL_BOTTOM_PAD = 34
+const DEADZONE = 8
 
-type BtnPair = {
-  rect: Phaser.GameObjects.Rectangle
-  text: Phaser.GameObjects.Text
-}
+type PointerLike = Phaser.Input.Pointer
 
 /**
- * Screen-space touch zones (scrollFactor 0). Hold = move; tap edges = jump / attack.
- * Extra pointers allow multiple simultaneous touches.
+ * Portrait arena controls: left-side drag stick for free movement and one large
+ * right-side action button. Screen-space objects stay visible as the camera moves.
  */
 export class MobileControls {
   readonly scene: Phaser.Scene
 
-  private leftHeld = false
-  private rightHeld = false
-  private jumpPending = false
+  private movePointerId: number | null = null
+  private stickCenter = new Phaser.Math.Vector2()
+  private moveVector = new Phaser.Math.Vector2()
   private attackPending = false
 
   private readonly root: Phaser.GameObjects.Container
-  private readonly pairs: BtnPair[] = []
+  private readonly stickBase: Phaser.GameObjects.Ellipse
+  private readonly stickKnob: Phaser.GameObjects.Ellipse
+  private readonly stickLabel: Phaser.GameObjects.Text
+  private readonly actionButton: Phaser.GameObjects.Ellipse
+  private readonly actionText: Phaser.GameObjects.Text
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -36,7 +39,52 @@ export class MobileControls {
     this.root.setScrollFactor(0)
     this.root.setDepth(DEPTH)
 
-    this.buildControls()
+    this.stickBase = scene.add.ellipse(0, 0, STICK_BASE_SIZE, STICK_BASE_SIZE, 0xffffff)
+    this.stickBase.setAlpha(0.34)
+    this.stickBase.setStrokeStyle(3, 0x2f7fb8, 0.62)
+    this.stickBase.setScrollFactor(0)
+    this.stickBase.setInteractive({ useHandCursor: false })
+
+    this.stickKnob = scene.add.ellipse(0, 0, STICK_KNOB_SIZE, STICK_KNOB_SIZE, 0xffdf62)
+    this.stickKnob.setAlpha(0.82)
+    this.stickKnob.setStrokeStyle(3, 0xffffff, 0.7)
+    this.stickKnob.setScrollFactor(0)
+
+    this.stickLabel = scene.add.text(0, 0, 'MOVE', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#17324d',
+    })
+    this.stickLabel.setOrigin(0.5)
+    this.stickLabel.setAlpha(0.82)
+    this.stickLabel.setScrollFactor(0)
+
+    this.actionButton = scene.add.ellipse(0, 0, ACTION_SIZE, ACTION_SIZE, 0xf05a28)
+    this.actionButton.setAlpha(0.88)
+    this.actionButton.setStrokeStyle(5, 0xfff3a6, 0.92)
+    this.actionButton.setScrollFactor(0)
+    this.actionButton.setInteractive({ useHandCursor: false })
+
+    this.actionText = scene.add.text(0, 0, 'ACTION', {
+      fontFamily: 'monospace',
+      fontSize: '16px',
+      color: '#ffffff',
+    })
+    this.actionText.setOrigin(0.5)
+    this.actionText.setAlpha(0.95)
+    this.actionText.setScrollFactor(0)
+
+    this.root.add([
+      this.stickBase,
+      this.stickKnob,
+      this.stickLabel,
+      this.actionButton,
+      this.actionText,
+    ])
+
+    this.bindInput()
+    this.layout()
+
     scene.scale.on('resize', this.handleResize, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.scale.off('resize', this.handleResize, this)
@@ -44,18 +92,19 @@ export class MobileControls {
   }
 
   get left(): boolean {
-    return this.leftHeld
+    return this.moveVector.x < -0.35
   }
 
   get right(): boolean {
-    return this.rightHeld
+    return this.moveVector.x > 0.35
   }
 
-  /** One-shot per tap; consume from Player.update() the same frame. */
-  consumeJumpEdge(): boolean {
-    const v = this.jumpPending
-    this.jumpPending = false
-    return v
+  get moveX(): number {
+    return this.moveVector.x
+  }
+
+  get moveY(): number {
+    return this.moveVector.y
   }
 
   consumeAttackEdge(): boolean {
@@ -68,104 +117,77 @@ export class MobileControls {
     this.layout()
   }
 
-  private mkPair(label: string, fontSize: string): BtnPair {
-    const rect = this.scene.add.rectangle(0, 0, BTN_SIZE, BTN_SIZE, 0x101824)
-    rect.setAlpha(0.38)
-    rect.setStrokeStyle(2, 0x8aa4cc, 0.42)
-    rect.setScrollFactor(0)
-    rect.setInteractive({ useHandCursor: false })
-
-    const text = this.scene.add.text(0, 0, label, {
-      fontFamily: 'monospace',
-      fontSize,
-      color: '#dce8ff',
-    })
-    text.setOrigin(0.5)
-    text.setScrollFactor(0)
-    text.setAlpha(0.88)
-
-    this.root.add(rect)
-    this.root.add(text)
-
-    return { rect, text }
-  }
-
-  private buildControls(): void {
-    const left = this.mkPair('◀', '26px')
-    const right = this.mkPair('▶', '26px')
-    const jump = this.mkPair('▲', '26px')
-    const attack = this.mkPair('A', '22px')
-
-    this.bindHold(left.rect, () => {
-      this.leftHeld = true
-    }, () => {
-      this.leftHeld = false
+  private bindInput(): void {
+    this.stickBase.on('pointerdown', (p: PointerLike) => {
+      p.event?.preventDefault?.()
+      this.movePointerId = p.id
+      this.updateStickFromPointer(p)
     })
 
-    this.bindHold(right.rect, () => {
-      this.rightHeld = true
-    }, () => {
-      this.rightHeld = false
+    this.scene.input.on('pointermove', (p: PointerLike) => {
+      if (this.movePointerId !== p.id) {
+        return
+      }
+      this.updateStickFromPointer(p)
     })
 
-    this.bindTap(jump.rect, () => {
-      this.jumpPending = true
+    this.scene.input.on('pointerup', (p: PointerLike) => {
+      if (this.movePointerId !== p.id) {
+        return
+      }
+      this.movePointerId = null
+      this.moveVector.set(0, 0)
+      this.stickKnob.setPosition(this.stickCenter.x, this.stickCenter.y)
     })
 
-    this.bindTap(attack.rect, () => {
+    this.actionButton.on('pointerdown', (p: PointerLike) => {
+      p.event?.preventDefault?.()
       this.attackPending = true
+      this.scene.tweens.add({
+        targets: this.actionButton,
+        scaleX: 0.86,
+        scaleY: 0.86,
+        duration: 55,
+        yoyo: true,
+      })
     })
-
-    this.pairs.push(left, right, jump, attack)
-    this.layout()
   }
 
-  private bindHold(
-    rect: Phaser.GameObjects.Rectangle,
-    down: () => void,
-    up: () => void,
-  ): void {
-    rect.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      p.event?.preventDefault?.()
-      down()
-    })
-    rect.on('pointerup', up)
-    rect.on('pointerout', up)
-    rect.on('pointerupoutside', up)
-  }
+  private updateStickFromPointer(p: PointerLike): void {
+    const maxDist = STICK_BASE_SIZE * 0.38
+    const dx = p.x - this.stickCenter.x
+    const dy = p.y - this.stickCenter.y
+    const dist = Math.hypot(dx, dy)
 
-  private bindTap(rect: Phaser.GameObjects.Rectangle, fire: () => void): void {
-    rect.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      p.event?.preventDefault?.()
-      fire()
-    })
+    if (dist < DEADZONE) {
+      this.moveVector.set(0, 0)
+      this.stickKnob.setPosition(this.stickCenter.x, this.stickCenter.y)
+      return
+    }
+
+    const clamped = Math.min(dist, maxDist)
+    const nx = dx / dist
+    const ny = dy / dist
+    this.moveVector.set(nx * (clamped / maxDist), ny * (clamped / maxDist))
+    this.stickKnob.setPosition(
+      this.stickCenter.x + nx * clamped,
+      this.stickCenter.y + ny * clamped,
+    )
   }
 
   private layout(): void {
     const w = this.scene.scale.width
     const h = this.scene.scale.height
+    const y = h - CONTROL_BOTTOM_PAD - STICK_BASE_SIZE / 2
 
-    if (this.pairs.length < 4) {
-      return
-    }
+    this.stickCenter.set(EDGE_PAD + STICK_BASE_SIZE / 2, y)
+    this.stickBase.setPosition(this.stickCenter.x, this.stickCenter.y)
+    this.stickKnob.setPosition(this.stickCenter.x, this.stickCenter.y)
+    this.stickLabel.setPosition(this.stickCenter.x, this.stickCenter.y + STICK_BASE_SIZE / 2 + 15)
 
-    const [left, right, jump, attack] = this.pairs
-
-    const bottomY = h - EDGE_PAD - BTN_SIZE / 2
-    const leftBaseX = EDGE_PAD + BTN_SIZE / 2
-    const jumpY = bottomY - BTN_SIZE - ROW_GAP
-
-    left.rect.setPosition(leftBaseX, bottomY)
-    left.text.setPosition(leftBaseX, bottomY)
-
-    right.rect.setPosition(leftBaseX + BTN_SIZE + BTN_GAP, bottomY)
-    right.text.setPosition(right.rect.x, right.rect.y)
-
-    const rightClusterX = w - EDGE_PAD - BTN_SIZE / 2
-    jump.rect.setPosition(rightClusterX, jumpY)
-    jump.text.setPosition(rightClusterX, jumpY)
-
-    attack.rect.setPosition(rightClusterX, bottomY)
-    attack.text.setPosition(rightClusterX, bottomY)
+    const actionX = w - EDGE_PAD - ACTION_SIZE / 2
+    const actionY = h - CONTROL_BOTTOM_PAD - ACTION_SIZE / 2
+    this.actionButton.setPosition(actionX, actionY)
+    this.actionText.setPosition(actionX, actionY)
   }
 }
