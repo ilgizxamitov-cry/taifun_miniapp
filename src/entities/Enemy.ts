@@ -1,4 +1,8 @@
 import Phaser from 'phaser'
+import {
+  clampToStreetNavigation,
+  constrainArcadeSpriteToStreetNavigation,
+} from '../systems/streetNavigation'
 import type { Player } from './Player'
 
 const TEX_KEY = 'enemy_placeholder'
@@ -12,9 +16,6 @@ const PLAYER_INTEREST_RADIUS = 560
 const SEPARATION_RADIUS = 78
 const SEPARATION_PUSH = 74
 const ACCELERATION = 0.09
-const STREET_MARGIN_X = 86
-const STREET_TOP_Y = 315
-const STREET_BOTTOM_Y = 820
 
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private defeatPending = false
@@ -38,6 +39,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     body.setSize(22, 28)
     body.setOffset(3, 4)
 
+    constrainArcadeSpriteToStreetNavigation(this)
     this.pickWanderTarget(scene.time.now)
     this.applyFacingFlip(1)
   }
@@ -84,6 +86,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       Phaser.Math.Linear(body.velocity.x, moveX, ACCELERATION),
       Phaser.Math.Linear(body.velocity.y, moveY, ACCELERATION),
     )
+    constrainArcadeSpriteToStreetNavigation(this)
     this.applyFacingFlip(body.velocity.x)
   }
 
@@ -159,8 +162,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   private setTarget(x: number, y: number): void {
     const worldWidth = this.scene.physics.world.bounds.width
-    this.targetX = Phaser.Math.Clamp(x, STREET_MARGIN_X, worldWidth - STREET_MARGIN_X)
-    this.targetY = Phaser.Math.Clamp(y, STREET_TOP_Y, STREET_BOTTOM_Y)
+    const target = clampToStreetNavigation(x, y, worldWidth)
+    this.targetX = target.x
+    this.targetY = target.y
   }
 
   private getSeparation(neighbors: Enemy[]): { x: number; y: number } {

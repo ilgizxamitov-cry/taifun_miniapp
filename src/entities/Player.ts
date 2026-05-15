@@ -1,10 +1,11 @@
 import Phaser from 'phaser'
+import { constrainArcadeSpriteToStreetNavigation } from '../systems/streetNavigation'
 import type { MobileControls } from '../ui/MobileControls'
 
 const SPEED = 250
 const DIAGONAL_NORMAL = 0.70710678
 
-const HERO_SCALE = 1.15
+const HERO_SCALE = 1.28
 const HERO_BODY_W = 40
 const HERO_BODY_H = 64
 
@@ -107,6 +108,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     body.setVelocity(moveX * moveSpeed, moveY * moveSpeed)
 
+    constrainArcadeSpriteToStreetNavigation(this)
     this.syncPresentation(body)
   }
 

@@ -1,4 +1,8 @@
 import Phaser from 'phaser'
+import {
+  clampStreetPropBottomY,
+  STREET_NAVIGATION,
+} from '../systems/streetNavigation'
 
 /** Scroll factor X only — Y stays 1 so vertical camera motion stays stable with gameplay. */
 const SCROLL = {
@@ -82,7 +86,14 @@ export function buildCityParallax(
   street.setDisplaySize(worldWidth + 92, 560)
 
   for (const x of [210, 880, 1540, 2200, 2860]) {
-    addProp(scene, CENTER_TEXTURES.prop3, x, 416, 78, 0.46)
+    addProp(
+      scene,
+      CENTER_TEXTURES.prop3,
+      x,
+      STREET_NAVIGATION.sidewalkBottomY,
+      78,
+      0.46,
+    )
   }
   addProp(scene, CENTER_TEXTURES.prop1, 120, worldHeight - 136, 138, 0.95)
   addProp(scene, CENTER_TEXTURES.prop2, 705, worldHeight - 120, 156, 0.86)
@@ -144,7 +155,7 @@ function addProp(
   displayWidth: number,
   alpha: number,
 ): void {
-  const prop = scene.add.image(x, bottomY, texture)
+  const prop = scene.add.image(x, clampStreetPropBottomY(bottomY), texture)
   prop.setOrigin(0.5, 1)
   prop.setDepth(DEPTH.props)
   prop.setScrollFactor(SCROLL.props, 1)

@@ -1,4 +1,8 @@
 import Phaser from 'phaser'
+import {
+  clampToStreetNavigation,
+  constrainArcadeSpriteToStreetNavigation,
+} from '../systems/streetNavigation'
 
 const TEX_KEY = 'civilian_npc'
 const TEX_W = 24
@@ -7,9 +11,6 @@ const TEX_H = 34
 const WALK_SPEED = 54
 const TURN_ACCELERATION = 0.08
 const ARRIVE_RADIUS = 24
-const STREET_MARGIN_X = 90
-const STREET_TOP_Y = 315
-const STREET_BOTTOM_Y = 820
 
 const COLORS = [0x3b82f6, 0xf97316, 0x8b5cf6, 0x10b981] as const
 
@@ -40,11 +41,14 @@ export class Civilian extends Phaser.Physics.Arcade.Sprite {
 
     this.setTint(COLORS[this.paletteIndex])
     this.setScale(1.05)
+    constrainArcadeSpriteToStreetNavigation(this)
     this.pickNewTarget(scene.time.now)
   }
 
   updateWander(): void {
     const body = this.body as Phaser.Physics.Arcade.Body
+    constrainArcadeSpriteToStreetNavigation(this)
+
     const now = this.scene.time.now
     const dx = this.targetX - this.x
     const dy = this.targetY - this.y
@@ -62,6 +66,8 @@ export class Civilian extends Phaser.Physics.Arcade.Sprite {
       Phaser.Math.Linear(body.velocity.y, ty, TURN_ACCELERATION),
     )
 
+    constrainArcadeSpriteToStreetNavigation(this)
+
     if (Math.abs(dx) > 3) {
       this.setFlipX(dx < 0)
     }
@@ -69,12 +75,13 @@ export class Civilian extends Phaser.Physics.Arcade.Sprite {
 
   private pickNewTarget(now: number): void {
     const worldWidth = this.scene.physics.world.bounds.width
-    this.targetX = Phaser.Math.Clamp(
+    const target = clampToStreetNavigation(
       this.x + Phaser.Math.Between(-380, 380),
-      STREET_MARGIN_X,
-      worldWidth - STREET_MARGIN_X,
+      this.y + Phaser.Math.Between(-170, 170),
+      worldWidth,
     )
-    this.targetY = Phaser.Math.Between(STREET_TOP_Y, STREET_BOTTOM_Y)
+    this.targetX = target.x
+    this.targetY = target.y
     this.nextDecisionAt = now + Phaser.Math.Between(1700, 3600)
   }
 
