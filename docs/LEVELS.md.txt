@@ -1,0 +1,142 @@
+# TAIFUN GAME — LEVEL STRUCTURE
+
+---
+
+# REGION 1 — CENTER
+
+The first playable district of the game.
+
+Visual style:
+- bright daytime
+- satirical bureaucracy atmosphere
+- central city district
+- clean readable mobile visuals
+
+Gameplay style:
+- exploration
+- building encounters
+- street events
+- road repair gameplay
+
+---
+
+# OVERWORLD STRUCTURE
+
+The player walks through the Center district.
+
+The district contains:
+- government buildings
+- sidewalks
+- road holes
+- NPCs
+- signs
+- shops
+- street decorations
+
+The overworld is:
+- compact
+- readable
+- mobile-friendly
+- not open-world
+
+---
+
+# MAIN BUILDINGS
+
+## 1. KURULTAI
+
+Type:
+- combat level
+
+Gameplay:
+- enter building
+- defeat officials
+- clear corridors
+- defeat mini-boss
+
+Theme:
+- loud officials
+- paperwork chaos
+- bureaucracy satire
+
+---
+
+## 2. ADMINISTRATION
+
+Type:
+- combat level
+
+Gameplay:
+- harder enemies
+- more guards
+- denser encounters
+
+Theme:
+- stricter atmosphere
+- more security
+- more aggressive officials
+
+---
+
+# STREET GAMEPLAY
+
+While exploring the district the player can:
+
+- enter buildings
+- interact with NPCs
+- repair road holes
+- trigger events
+
+---
+
+# ROAD HOLE SYSTEM
+
+Road holes randomly appear in the district.
+
+The player can:
+- buy asphalt bags
+- repair holes
+- receive money
+- increase city reputation
+
+If the player stays offline:
+- more holes appear
+- the district becomes worse
+
+---
+
+# NPCS
+
+Possible NPC types:
+- angry citizens
+- tired workers
+- grandmothers
+- taxi drivers
+- street sellers
+
+NPCs provide:
+- humor
+- atmosphere
+- missions
+- commentary
+
+---
+
+# DISTRICT PROGRESSION
+
+As the player improves the district:
+- fewer holes appear
+- streets become cleaner
+- NPC reactions improve
+- visuals become brighter
+
+---
+
+# GAMEPLAY FLOW
+
+Street exploration
+→ enter building
+→ defeat officials
+→ receive reward
+→ repair city
+→ unlock next challenge
