@@ -73,21 +73,21 @@ export function buildCityParallax(
     0.94,
   )
 
-  addLandmark(scene, CENTER_TEXTURES.kurultai, 390, 484, 270, 1)
-  addLandmark(scene, CENTER_TEXTURES.administration, 2260, 510, 300, 1)
+  addLandmark(scene, CENTER_TEXTURES.kurultai, 430, 484, 270, 1)
+  addLandmark(scene, CENTER_TEXTURES.administration, 2800, 510, 300, 1)
 
   const street = scene.add.image(cx, worldHeight - 242, CENTER_TEXTURES.street)
   street.setDepth(DEPTH.street)
   street.setScrollFactor(SCROLL.street, 1)
   street.setDisplaySize(worldWidth + 92, 560)
 
-  for (const x of [190, 760, 1330, 1900, 2470]) {
+  for (const x of [210, 880, 1540, 2200, 2860]) {
     addProp(scene, CENTER_TEXTURES.prop3, x, 416, 78, 0.46)
   }
   addProp(scene, CENTER_TEXTURES.prop1, 120, worldHeight - 136, 138, 0.95)
   addProp(scene, CENTER_TEXTURES.prop2, 705, worldHeight - 120, 156, 0.86)
   addProp(scene, CENTER_TEXTURES.prop1, 1370, worldHeight - 132, 130, 0.9)
-  addProp(scene, CENTER_TEXTURES.prop2, 1990, worldHeight - 124, 164, 0.86)
+  addProp(scene, CENTER_TEXTURES.prop2, 2190, worldHeight - 124, 164, 0.86)
   addProp(scene, CENTER_TEXTURES.prop1, worldWidth - 132, worldHeight - 136, 142, 0.92)
 }
 

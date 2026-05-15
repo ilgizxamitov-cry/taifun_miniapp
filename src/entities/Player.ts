@@ -4,9 +4,9 @@ import type { MobileControls } from '../ui/MobileControls'
 const SPEED = 250
 const DIAGONAL_NORMAL = 0.70710678
 
-const HERO_SCALE = 0.75
-const HERO_BODY_W = 35
-const HERO_BODY_H = 56
+const HERO_SCALE = 1.15
+const HERO_BODY_W = 40
+const HERO_BODY_H = 64
 
 /** Locomotion-only visuals; future anim layers can map to these keys. */
 const LocomotionVisual = {
