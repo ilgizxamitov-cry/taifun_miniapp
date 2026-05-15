@@ -51,30 +51,71 @@ export function buildCityParallax(
   // Far city uses the same source asset as a softened duplicate: there is no
   // separate far_city file in the delivered pack, but this still creates a real
   // far-city render layer with its own depth, scale, tint and parallax.
-  const farCity = scene.add.image(cx, 338, CENTER_TEXTURES.farCity)
-  farCity.setDepth(DEPTH.farCity)
-  farCity.setScrollFactor(SCROLL.farCity, 1)
-  farCity.setDisplaySize(fullW + 110, 360)
-  farCity.setAlpha(0.52)
-  farCity.setTint(0x8fa7c4)
+  addCityStrip(
+    scene,
+    CENTER_TEXTURES.farCity,
+    338,
+    720,
+    360,
+    DEPTH.farCity,
+    SCROLL.farCity,
+    0.52,
+    0x8fa7c4,
+  )
+  addCityStrip(
+    scene,
+    CENTER_TEXTURES.midCity,
+    414,
+    650,
+    420,
+    DEPTH.midCity,
+    SCROLL.midCity,
+    0.94,
+  )
 
-  const midCity = scene.add.image(cx, 414, CENTER_TEXTURES.midCity)
-  midCity.setDepth(DEPTH.midCity)
-  midCity.setScrollFactor(SCROLL.midCity, 1)
-  midCity.setDisplaySize(fullW + 70, 420)
-  midCity.setAlpha(0.94)
-
-  addLandmark(scene, CENTER_TEXTURES.administration, 150, 514, 385, SCROLL.landmarks)
-  addLandmark(scene, CENTER_TEXTURES.kurultai, 470, 498, 350, SCROLL.landmarks)
+  addLandmark(scene, CENTER_TEXTURES.kurultai, 390, 484, 270, 1)
+  addLandmark(scene, CENTER_TEXTURES.administration, 2260, 510, 300, 1)
 
   const street = scene.add.image(cx, worldHeight - 242, CENTER_TEXTURES.street)
   street.setDepth(DEPTH.street)
   street.setScrollFactor(SCROLL.street, 1)
   street.setDisplaySize(worldWidth + 92, 560)
 
-  addProp(scene, CENTER_TEXTURES.prop3, 110, 416, 94, 0.5)
-  addProp(scene, CENTER_TEXTURES.prop1, 80, worldHeight - 136, 172, 0.95)
-  addProp(scene, CENTER_TEXTURES.prop2, worldWidth - 98, worldHeight - 120, 208, 0.9)
+  for (const x of [190, 760, 1330, 1900, 2470]) {
+    addProp(scene, CENTER_TEXTURES.prop3, x, 416, 78, 0.46)
+  }
+  addProp(scene, CENTER_TEXTURES.prop1, 120, worldHeight - 136, 138, 0.95)
+  addProp(scene, CENTER_TEXTURES.prop2, 705, worldHeight - 120, 156, 0.86)
+  addProp(scene, CENTER_TEXTURES.prop1, 1370, worldHeight - 132, 130, 0.9)
+  addProp(scene, CENTER_TEXTURES.prop2, 1990, worldHeight - 124, 164, 0.86)
+  addProp(scene, CENTER_TEXTURES.prop1, worldWidth - 132, worldHeight - 136, 142, 0.92)
+}
+
+function addCityStrip(
+  scene: Phaser.Scene,
+  texture: string,
+  y: number,
+  tileWidth: number,
+  displayHeight: number,
+  depth: number,
+  scrollX: number,
+  alpha: number,
+  tint?: number,
+): void {
+  for (
+    let x = tileWidth / 2;
+    x < scene.physics.world.bounds.width + tileWidth;
+    x += tileWidth
+  ) {
+    const strip = scene.add.image(x, y, texture)
+    strip.setDepth(depth)
+    strip.setScrollFactor(scrollX, 1)
+    strip.setDisplaySize(tileWidth + 8, displayHeight)
+    strip.setAlpha(alpha)
+    if (tint !== undefined) {
+      strip.setTint(tint)
+    }
+  }
 }
 
 function addLandmark(

@@ -22,10 +22,18 @@ const CENTER_ASSETS = [
   [CENTER_TEXTURES.prop3, new URL('../../assets/backgrounds/center/props/3.png', import.meta.url).href],
 ] as const
 
-const WORLD_WIDTH = 640
+const WORLD_WIDTH = 2700
 const WORLD_HEIGHT = 960
-const ARENA_CENTER_X = WORLD_WIDTH / 2
-const ARENA_CENTER_Y = WORLD_HEIGHT / 2
+const START_X = 280
+const STREET_CENTER_Y = 580
+const STREET_TOP_Y = 270
+const STREET_BOTTOM_Y = 850
+const DISTRICT_LANDMARKS = {
+  kurultaiX: 360,
+  administrationX: 2240,
+} as const
+const ARENA_CENTER_X = START_X
+const ARENA_CENTER_Y = STREET_CENTER_Y
 const SKY_COLOR = 0xbcecff
 
 /** Strike defeat radius — placeholder until hitboxes exist. */
@@ -83,8 +91,8 @@ export class CityScene extends Phaser.Scene {
     this.spawnEnemies()
     this.buildHud()
 
-    this.cameras.main.startFollow(this.player, true, 0.06, 0.06)
-    this.cameras.main.setDeadzone(64, 96)
+    this.cameras.main.startFollow(this.player, true, 0.085, 0.045)
+    this.cameras.main.setDeadzone(96, 260)
   }
 
   private ensureCombatFxTextures(): void {
@@ -103,51 +111,68 @@ export class CityScene extends Phaser.Scene {
   }
 
   private buildArena(): void {
-    const plazaW = WORLD_WIDTH - 54
-    const plazaH = WORLD_HEIGHT - 122
+    const streetW = WORLD_WIDTH - 110
+    const streetH = STREET_BOTTOM_Y - STREET_TOP_Y
+    const streetCenterX = WORLD_WIDTH / 2
+    const streetCenterY = STREET_TOP_Y + streetH / 2
+
     const floor = this.add.rectangle(
-      ARENA_CENTER_X,
-      ARENA_CENTER_Y + 10,
-      plazaW,
-      plazaH,
+      streetCenterX,
+      streetCenterY,
+      streetW,
+      streetH,
       0xf1d59b,
       0.18,
     )
     floor.setDepth(-22)
     floor.setStrokeStyle(5, 0xffffff, 0.9)
 
-    const curb = this.add.rectangle(ARENA_CENTER_X, ARENA_CENTER_Y + 10, plazaW - 36, plazaH - 46, 0xf7e6bd, 0.24)
+    const curb = this.add.rectangle(
+      streetCenterX,
+      streetCenterY,
+      streetW - 64,
+      streetH - 54,
+      0xf7e6bd,
+      0.24,
+    )
     curb.setDepth(-21)
     curb.setStrokeStyle(3, 0x5bb3ce, 0.62)
 
     const tileColor = 0xcfaa70
-    for (let x = 58; x < WORLD_WIDTH - 58; x += 54) {
-      const line = this.add.rectangle(x, ARENA_CENTER_Y + 10, 2, plazaH - 64, tileColor)
-      line.setDepth(-20)
-      line.setAlpha(0.28)
-    }
-    for (let y = 96; y < WORLD_HEIGHT - 96; y += 54) {
-      const line = this.add.rectangle(ARENA_CENTER_X, y, plazaW - 54, 2, tileColor)
+    for (let x = 96; x < WORLD_WIDTH - 96; x += 72) {
+      const line = this.add.rectangle(x, streetCenterY, 2, streetH - 70, tileColor)
       line.setDepth(-20)
       line.setAlpha(0.24)
     }
+    for (let y = STREET_TOP_Y + 52; y < STREET_BOTTOM_Y - 44; y += 58) {
+      const line = this.add.rectangle(streetCenterX, y, streetW - 84, 2, tileColor)
+      line.setDepth(-20)
+      line.setAlpha(0.2)
+    }
 
-    const combatRead = this.add.ellipse(
-      ARENA_CENTER_X,
-      ARENA_CENTER_Y + 22,
-      388,
-      488,
-      0xfff4cb,
-      0.34,
-    )
-    combatRead.setDepth(-19)
-    combatRead.setStrokeStyle(4, 0x32a1c8, 0.35)
+    for (const x of [
+      DISTRICT_LANDMARKS.kurultaiX,
+      940,
+      1580,
+      DISTRICT_LANDMARKS.administrationX,
+    ]) {
+      const combatRead = this.add.ellipse(
+        x,
+        STREET_CENTER_Y + 20,
+        392,
+        418,
+        0xfff4cb,
+        0.22,
+      )
+      combatRead.setDepth(-19)
+      combatRead.setStrokeStyle(4, 0x32a1c8, 0.24)
+    }
 
     const queueRing = this.add.ellipse(
-      ARENA_CENTER_X,
-      ARENA_CENTER_Y + 22,
-      320,
-      420,
+      START_X,
+      STREET_CENTER_Y + 20,
+      318,
+      398,
       0xffffff,
       0.035,
     )
@@ -155,25 +180,42 @@ export class CityScene extends Phaser.Scene {
     queueRing.setStrokeStyle(3, 0xe65353, 0.34)
 
     for (const [x, y] of [
-      [86, 190],
-      [554, 190],
-      [86, 742],
-      [554, 742],
-      [146, 484],
-      [494, 484],
+      [180, 360],
+      [520, 360],
+      [180, 748],
+      [520, 748],
+      [850, 512],
+      [1280, 700],
+      [1700, 510],
+      [2140, 738],
+      [2460, 390],
     ] as [number, number][]) {
       this.addQueuePost(x, y)
     }
 
-    this.addCrosswalk(ARENA_CENTER_X, WORLD_HEIGHT - 118)
-    this.addFloorSticker(ARENA_CENTER_X - 122, ARENA_CENTER_Y - 176, 'FORM\nA-38')
-    this.addFloorSticker(ARENA_CENTER_X + 128, ARENA_CENTER_Y + 178, 'APPROVED?')
+    for (const x of [START_X, 1040, 1780, DISTRICT_LANDMARKS.administrationX]) {
+      this.addCrosswalk(x, STREET_BOTTOM_Y - 28)
+    }
+    this.addFloorSticker(START_X - 116, STREET_CENTER_Y - 154, 'FORM\nA-38')
+    this.addFloorSticker(START_X + 132, STREET_CENTER_Y + 156, 'APPROVED?')
+    this.addFloorSticker(1420, STREET_CENTER_Y - 144, 'CITY\nCENTER')
+    this.addFloorSticker(
+      DISTRICT_LANDMARKS.administrationX - 112,
+      STREET_CENTER_Y + 142,
+      'QUEUE\nHERE',
+    )
 
-    const topShade = this.add.rectangle(ARENA_CENTER_X, 40, WORLD_WIDTH, 80, 0xffffff)
+    const topShade = this.add.rectangle(streetCenterX, 40, WORLD_WIDTH, 80, 0xffffff)
     topShade.setDepth(-9)
     topShade.setAlpha(0.16)
 
-    const bottomShade = this.add.rectangle(ARENA_CENTER_X, WORLD_HEIGHT - 36, WORLD_WIDTH, 72, 0xf07167)
+    const bottomShade = this.add.rectangle(
+      streetCenterX,
+      WORLD_HEIGHT - 36,
+      WORLD_WIDTH,
+      72,
+      0xf07167,
+    )
     bottomShade.setDepth(-9)
     bottomShade.setAlpha(0.12)
   }
@@ -270,10 +312,10 @@ export class CityScene extends Phaser.Scene {
 
   private spawnEnemies(): void {
     const placements: [number, number][] = [
-      [ARENA_CENTER_X - 120, ARENA_CENTER_Y - 120],
-      [ARENA_CENTER_X + 135, ARENA_CENTER_Y - 82],
-      [ARENA_CENTER_X - 92, ARENA_CENTER_Y + 138],
-      [ARENA_CENTER_X + 118, ARENA_CENTER_Y + 116],
+      [START_X - 115, STREET_CENTER_Y - 112],
+      [START_X + 136, STREET_CENTER_Y - 78],
+      [START_X - 82, STREET_CENTER_Y + 132],
+      [START_X + 128, STREET_CENTER_Y + 110],
     ]
 
     for (const [x, y] of placements) {
