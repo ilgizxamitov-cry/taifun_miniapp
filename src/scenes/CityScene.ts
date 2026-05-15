@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { Civilian } from '../entities/Civilian'
 import { Enemy } from '../entities/Enemy'
 import { Player } from '../entities/Player'
+import { clampToStreetNavigation } from '../systems/streetNavigation'
 import { MobileControls } from '../ui/MobileControls'
 import { CENTER_TEXTURES, buildCityParallax } from './cityParallax'
 
@@ -26,7 +27,7 @@ const CENTER_ASSETS = [
 const WORLD_WIDTH = 3200
 const WORLD_HEIGHT = 960
 const START_X = 280
-const STREET_CENTER_Y = 580
+const STREET_CENTER_Y = 650
 const ARENA_CENTER_X = START_X
 const ARENA_CENTER_Y = STREET_CENTER_Y
 const SKY_COLOR = 0xbcecff
@@ -53,6 +54,7 @@ export class CityScene extends Phaser.Scene {
   private civilians: Civilian[] = []
   private defeatedCount = 0
   private counterText!: Phaser.GameObjects.Text
+  private reputationFill!: Phaser.GameObjects.Rectangle
 
   constructor() {
     super({ key: 'CityScene' })
@@ -152,14 +154,15 @@ export class CityScene extends Phaser.Scene {
 
   private spawnEnemies(): void {
     const placements: [number, number][] = [
-      [START_X - 80, STREET_CENTER_Y - 118],
-      [760, STREET_CENTER_Y + 124],
-      [1460, STREET_CENTER_Y - 92],
-      [2320, STREET_CENTER_Y + 118],
-      [WORLD_WIDTH - 270, STREET_CENTER_Y - 40],
+      [START_X - 80, STREET_CENTER_Y - 90],
+      [760, STREET_CENTER_Y + 120],
+      [1460, STREET_CENTER_Y - 70],
+      [2320, STREET_CENTER_Y + 110],
+      [WORLD_WIDTH - 270, STREET_CENTER_Y - 35],
     ]
 
-    for (const [x, y] of placements) {
+    for (const [rawX, rawY] of placements) {
+      const { x, y } = clampToStreetNavigation(rawX, rawY, WORLD_WIDTH)
       const enemy = new Enemy(this, x, y)
       enemy.setDepth(30)
       this.enemies.push(enemy)
@@ -168,17 +171,18 @@ export class CityScene extends Phaser.Scene {
 
   private spawnCivilians(): void {
     const placements: [number, number, number][] = [
-      [430, STREET_CENTER_Y + 168, 0],
-      [690, STREET_CENTER_Y - 134, 1],
-      [1080, STREET_CENTER_Y + 82, 2],
-      [1390, STREET_CENTER_Y - 172, 3],
-      [1780, STREET_CENTER_Y + 152, 0],
-      [2080, STREET_CENTER_Y - 118, 1],
+      [430, STREET_CENTER_Y + 150, 0],
+      [690, STREET_CENTER_Y - 96, 1],
+      [1080, STREET_CENTER_Y + 72, 2],
+      [1390, STREET_CENTER_Y - 126, 3],
+      [1780, STREET_CENTER_Y + 135, 0],
+      [2080, STREET_CENTER_Y - 92, 1],
       [2480, STREET_CENTER_Y + 58, 2],
-      [2860, STREET_CENTER_Y - 156, 3],
+      [2860, STREET_CENTER_Y - 116, 3],
     ]
 
-    for (const [x, y, palette] of placements) {
+    for (const [rawX, rawY, palette] of placements) {
+      const { x, y } = clampToStreetNavigation(rawX, rawY, WORLD_WIDTH)
       const civilian = new Civilian(this, x, y, palette)
       civilian.setDepth(24)
       this.civilians.push(civilian)
@@ -186,29 +190,68 @@ export class CityScene extends Phaser.Scene {
   }
 
   private buildHud(): void {
-    const panel = this.add.rectangle(102, 31, 182, 42, 0xffffff, 0.86)
+    const panel = this.add.rectangle(148, 66, 276, 106, 0x132035, 0.9)
     panel.setScrollFactor(0)
     panel.setDepth(999)
-    panel.setStrokeStyle(3, 0x2f7fb8, 0.72)
+    panel.setStrokeStyle(4, 0xf6d365, 0.95)
 
-    const stamp = this.add.rectangle(28, 31, 34, 24, 0xffdf62, 0.96)
-    stamp.setScrollFactor(0)
-    stamp.setDepth(1000)
-    stamp.setAngle(-8)
-    stamp.setStrokeStyle(2, 0xf05a28, 0.65)
+    const accent = this.add.rectangle(24, 27, 26, 22, 0xffdf62, 0.98)
+    accent.setScrollFactor(0)
+    accent.setDepth(1000)
+    accent.setAngle(-8)
+    accent.setStrokeStyle(2, 0xf05a28, 0.78)
 
-    this.counterText = this.add.text(52, 18, 'Stamped: 0', {
+    this.counterText = this.add.text(44, 17, 'Stamped: 0', {
       fontFamily: 'monospace',
-      fontSize: '17px',
-      color: '#17324d',
+      fontSize: '16px',
+      color: '#fff3b0',
     })
     this.counterText.setScrollFactor(0)
     this.counterText.setDepth(1001)
-    this.counterText.setStroke('#ffffff', 4)
+    this.counterText.setStroke('#09111f', 4)
+
+    this.addHudMeter(22, 48, 'HEALTH', 1, 0x42f56c)
+    this.reputationFill = this.addHudMeter(22, 70, 'REP', 0, 0x45c7ff)
+    this.addHudMeter(22, 92, 'SUPPORT', 0.68, 0xffdf62)
+  }
+
+  private addHudMeter(
+    x: number,
+    y: number,
+    label: string,
+    value: number,
+    fillColor: number,
+  ): Phaser.GameObjects.Rectangle {
+    const labelText = this.add.text(x, y - 7, label, {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#f8fbff',
+    })
+    labelText.setScrollFactor(0)
+    labelText.setDepth(1001)
+    labelText.setStroke('#09111f', 3)
+
+    const frame = this.add.rectangle(x + 76, y, 132, 12, 0x09111f, 0.92)
+    frame.setOrigin(0, 0.5)
+    frame.setScrollFactor(0)
+    frame.setDepth(1000)
+    frame.setStrokeStyle(2, 0xffffff, 0.72)
+
+    const fill = this.add.rectangle(x + 78, y, 128 * value, 8, fillColor, 1)
+    fill.setOrigin(0, 0.5)
+    fill.setScrollFactor(0)
+    fill.setDepth(1001)
+
+    return fill
   }
 
   private refreshDefeatCounter(): void {
     this.counterText.setText(`Stamped: ${this.defeatedCount}`)
+    this.reputationFill.width = 128 * Phaser.Math.Clamp(
+      this.defeatedCount / 5,
+      0,
+      1,
+    )
   }
 
   private triggerCombatImpact(worldX: number, worldY: number): void {
